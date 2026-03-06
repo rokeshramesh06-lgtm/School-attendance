@@ -26,8 +26,22 @@ export type AttendanceStudentRow = Student & {
   status: AttendanceStatus | null;
 };
 
-const dataDirectory = path.join(process.cwd(), "data");
-const dbPath = path.join(dataDirectory, "attendance.db");
+function resolveDatabasePath() {
+  const configuredPath = process.env.DATABASE_PATH?.trim();
+
+  if (configuredPath) {
+    return path.resolve(configuredPath);
+  }
+
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    return path.join("/tmp", "attendance.db");
+  }
+
+  return path.join(process.cwd(), "data", "attendance.db");
+}
+
+const dbPath = resolveDatabasePath();
+const dataDirectory = path.dirname(dbPath);
 
 if (!fs.existsSync(dataDirectory)) {
   fs.mkdirSync(dataDirectory, { recursive: true });
