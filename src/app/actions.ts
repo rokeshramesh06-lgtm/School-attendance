@@ -97,8 +97,8 @@ export async function addStudentAction(formData: FormData) {
 export async function markAttendanceAction(formData: FormData) {
   const user = await getCurrentUser();
 
-  if (user?.role !== "teacher") {
-    fail("Only teachers can mark attendance.");
+  if (!user || (user.role !== "teacher" && user.role !== "admin")) {
+    fail("Only teachers and admins can mark attendance.");
   }
 
   const date = clean(formData.get("date"));

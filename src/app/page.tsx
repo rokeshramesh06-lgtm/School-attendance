@@ -166,7 +166,7 @@ function Landing({
             </p>
             <div className="mt-10 grid gap-4 sm:grid-cols-3">
               <Stat label="Students" value={String(stats.students)} note="Seeded and ready for registration updates." />
-              <Stat label="Teachers" value={String(stats.teachers)} note="Only teacher accounts can mark attendance." />
+              <Stat label="Teachers" value={String(stats.teachers)} note="Teacher accounts are ready for attendance operations." />
               <Stat label="Today" value={String(stats.attendanceToday)} note="Attendance entries already captured today." />
             </div>
             <div className="mt-10 grid gap-4 md:grid-cols-2">
@@ -176,7 +176,7 @@ function Landing({
                 </p>
                 <ul className="mt-4 grid gap-3 text-sm text-slate-100">
                   <li>Student registration with class, section, roll number, and parent contact</li>
-                  <li>Teacher-only login for present and absent marking</li>
+                  <li>Teacher and admin login for present and absent marking</li>
                   <li>Date-wise and class-wise attendance management</li>
                   <li>Daily reports, monthly reports, and attendance percentages</li>
                   <li>Admin workspace for teacher and student management</li>
@@ -216,8 +216,8 @@ function Landing({
               Secure access for teachers and admin staff
             </h2>
             <p className="mt-4 text-sm leading-7 text-slate-600">
-              Teachers can mark attendance. Admins can register students, add
-              teachers, and review institutional reports.
+              Teachers and admins can mark attendance. Admins can also register
+              students, add teachers, and review institutional reports.
             </p>
           </div>
           <div className="mt-8 grid gap-4">
@@ -306,7 +306,7 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
                 Signed in as {user.name} ({user.username}).{" "}
                 {user.role === "admin"
                   ? "Manage teachers, register students, and review performance trends."
-                  : "Attendance tools are restricted to teacher accounts only, with date-wise and class-wise controls."}
+                  : "Use date-wise and class-wise controls to mark attendance and review class performance."}
               </p>
             </div>
             <form action={logoutAction}>
@@ -318,7 +318,7 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           <Stat label="Students" value={String(stats.students)} note="Active registered learners across all classes." />
-          <Stat label="Teachers" value={String(stats.teachers)} note="Teacher accounts available for attendance marking." />
+          <Stat label="Teachers" value={String(stats.teachers)} note="Teacher accounts available alongside admin attendance access." />
           <Stat label="Attendance Today" value={String(stats.attendanceToday)} note="Date-wise entries saved for the current day." />
         </div>
         <div className="mt-6 grid gap-4">
@@ -330,8 +330,8 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
             <div className="grid gap-6 lg:grid-cols-2">
               <Section
                 eyebrow="Add Teachers"
-                title="Create teacher login accounts"
-                description="Admin users can add teacher usernames and passwords. Attendance marking remains restricted to teachers."
+              title="Create teacher login accounts"
+              description="Admin users can add teacher usernames and passwords while retaining their own attendance and reporting access."
               >
                 <form action={addTeacherAction} className="grid gap-4 md:grid-cols-2">
                   <Field label="Teacher name" name="name" placeholder="e.g. Riya Patel" />
@@ -368,6 +368,87 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
               </Section>
             </div>
 
+            <Section
+              eyebrow="Attendance Marking"
+              title="Daily attendance for admins and teachers"
+              description="Choose a class, section, and date. Every student defaults to present unless explicitly marked absent."
+            >
+              <form className="grid gap-4 md:grid-cols-4">
+                <SelectField label="Class" name="attClass" options={classes} value={attClass} />
+                <SelectField label="Section" name="attSection" options={attSections} value={attSection} />
+                <Field label="Attendance date" name="attDate" defaultValue={attDate} type="date" />
+                <div className="flex items-end">
+                  <button className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-300">
+                    Load class list
+                  </button>
+                </div>
+              </form>
+              <form action={markAttendanceAction} className="mt-6">
+                <input name="date" type="hidden" value={attDate} />
+                <div className="overflow-x-auto rounded-[24px] bg-[#f7f4ef] p-3">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="text-slate-500">
+                      <tr>
+                        <th className="pb-3 pl-3 font-medium">Student</th>
+                        <th className="pb-3 font-medium">Roll number</th>
+                        <th className="pb-3 font-medium">Parent contact</th>
+                        <th className="pb-3 font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {attendanceRows.length > 0 ? (
+                        attendanceRows.map((student) => (
+                          <tr key={student.id} className="border-t border-slate-200/80 bg-white">
+                            <td className="px-3 py-4">
+                              <input name="studentId" type="hidden" value={student.id} />
+                              <div className="font-medium text-slate-950">{student.name}</div>
+                              <div className="text-xs text-slate-500">Class {student.className} - {student.section}</div>
+                            </td>
+                            <td className="py-4 text-slate-700">{student.rollNumber}</td>
+                            <td className="py-4 text-slate-700">{student.parentContact}</td>
+                            <td className="py-4">
+                              <div className="inline-flex rounded-full bg-slate-100 p-1">
+                                <label className="cursor-pointer rounded-full px-3 py-2 text-xs font-semibold text-slate-700 has-[:checked]:bg-emerald-600 has-[:checked]:text-white">
+                                  <input
+                                    className="sr-only"
+                                    defaultChecked={student.status !== "absent"}
+                                    name={`status_${student.id}`}
+                                    type="radio"
+                                    value="present"
+                                  />
+                                  Present
+                                </label>
+                                <label className="cursor-pointer rounded-full px-3 py-2 text-xs font-semibold text-slate-700 has-[:checked]:bg-rose-600 has-[:checked]:text-white">
+                                  <input
+                                    className="sr-only"
+                                    defaultChecked={student.status === "absent"}
+                                    name={`status_${student.id}`}
+                                    type="radio"
+                                    value="absent"
+                                  />
+                                  Absent
+                                </label>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td className="px-3 py-8 text-slate-500" colSpan={4}>
+                            No students found for this class and section.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <button className="rounded-2xl bg-[#12344d] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0d293d]">
+                    Save attendance
+                  </button>
+                </div>
+              </form>
+            </Section>
             <Section
               eyebrow="Reports"
               title="Daily, monthly, and percentage-based attendance reports"
@@ -525,7 +606,7 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
           <div className="mt-6 grid gap-6">
             <Section
               eyebrow="Attendance Marking"
-              title="Teacher-only daily attendance"
+              title="Daily attendance"
               description="Choose a class, section, and date. Every student defaults to present unless explicitly marked absent."
             >
               <form className="grid gap-4 md:grid-cols-4">
